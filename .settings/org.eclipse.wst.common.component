@@ -3,6 +3,7 @@
     <wb-module deploy-name="bookDinner">
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/java"/>
+        <wb-resource deploy-path="/" source-path="/WebContent"/>
         <property name="java-output-path" value="/bookDinner/target/classes"/>
         <property name="context-root" value="bookDinner"/>
     </wb-module>

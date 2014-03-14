@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"   
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+<mapper namespace="com.lixiaodai.bookDinner.dao.UserMapper">
+	<resultMap type="User" id="userResultMap">
+		<id property="id" column="id"/>
+		<result property="userName" column="userName"/>
+		<result property="sex" column="sex"/>
+		<result property="age" column="age"/>
+		<result property="birthday" column="birthday"/>
+		<result property="passWord" column="password"/>
+	</resultMap>
+	<sql id="userCols">id,userName,sex,age,birthday,passWord</sql>
+	<sql id="userSimCols">userName,sex,age,birthday,passWord</sql>
+	<select id="getUser" parameterType="int" resultMap="userResultMap">
+		SELECT <include refid="userCols"/>
+		From t_user where id = #{id}
+	</select>
+	<select id="findUsersByPage" parameterType="JTablePage" resultMap="userResultMap">
+		SELECT <include refid="userCols"/> 
+		from t_user	
+	</select>
+	<select id="findUserByUserName" parameterType="String" resultMap="userResultMap">
+		SELECT <include refid="userCols"/>
+		from t_user where userName = #{userName}
+	</select>
+	<select id="getAllUsers" resultType="User" resultMap="userResultMap">
+		SELECT <include refid="userCols"/> 
+		from t_user
+	</select>
+	<insert id="userAdd" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+		<!-- 当使用的数据库不支持自增主键的时候,Oracle,DB2 -->
+		<!-- selectKey给了你一个简单的行为在你的数据库中来处理自动生成的主键，而不需要使你的Java代码变得复杂。在上面的示例中，selectKey元素将会首先运行，userid会被设置，然后插入语句会被调用。另外，selectKey节点生成的KeyGenerator优先级高于statement节点的useGeneratedKeys属性生成的KeyGenerator对象，也就是说配置了SelectKey子节点就不需要再配置useGeneratedKeys属性了 -->
+		<!-- 
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			select id from t_user
+		</selectKey>
+		 -->
+		INSERT INTO t_user (<include refid="userSimCols"/>) values (#{userName},#{sex},#{age},#{birthday},#{passWord})
+	</insert>
+	<update id="userEdit" parameterType="User">
+		UPDATE t_user set userName=#{userName},sex=#{sex},age=#{age},birthday=#{birthday},passWord=#{passWord} where id = #{id}
+	</update>
+	<delete id="userDel" parameterType="int">
+		DELETE FROM t_user where id = #{id}
+	</delete>
+
+</mapper>

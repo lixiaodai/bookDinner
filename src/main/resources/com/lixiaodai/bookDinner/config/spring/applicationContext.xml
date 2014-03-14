@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+       http://www.springframework.org/schema/aop 
+       http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+       http://www.springframework.org/schema/tx 
+       http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<!-- 开启注解 -->
+	<context:annotation-config />
+	<!-- 设定注解扫描范围,包及其子包 -->
+	<context:component-scan base-package="com.lixiaodai.bookDinner">
+		<!--将Controller的注解排除掉 -->
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+	<!-- 解析properties文件 -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location">
+			<value>classpath:com/lixiaodai/bookDinner/config/application.properties
+			</value>
+		</property>
+		<property name="fileEncoding" value="utf-8" />
+	</bean>
+
+	<!-- 设置数据库连接池,这里用的是C3P0 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass" value="${jdbc.driver}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="maxIdleTime" value="${c3p0.maxIdleTime}" />
+		<property name="maxPoolSize" value="${c3p0.maxPoolSize}" />
+		<property name="minPoolSize" value="${c3p0.minPoolSize}" />
+		<property name="initialPoolSize" value="${c3p0.initialPoolSize}" />
+	</bean>
+
+	<!-- 配置事物管理类 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<!-- 配置AOP -->
+	<aop:config>
+		<!-- 设置AOP切面位置 -->
+		<aop:pointcut
+			expression="execution(* com.lixiaodai.bookDinner.service.impl.*.*(..))"
+			id="serviceMethods" />
+		<!-- 设置AOP通知,也就是对切面加入的业务处理 -->
+		<aop:advisor advice-ref="transactionAdvice" pointcut-ref="serviceMethods" />
+	</aop:config>
+	<!-- 配置声明式事物 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="save*" propagation="REQUIRED"
+				rollback-for="com.lang.Exception" />
+			<tx:method name="update*" propagation="REQUIRED"
+				rollback-for="com.lang.Exception" />
+			<tx:method name="delete*" propagation="REQUIRED"
+				rollback-for="com.lang.Exception" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- MyBatis分页拦截器 -->
+	<bean id="pageIntercepter" class="com.lixiaodai.bookDinner.intercepter.PageIntercepter">
+		<property name="databaseType" value="mysql" />
+	</bean>
+
+	<!-- MyBatis排序拦截器 -->
+	<bean id="orderIntercepter" class="com.lixiaodai.bookDinner.intercepter.OrderIntercepter">
+	</bean>
+
+	<!-- Spring集成MyBatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 实体类包位置 -->
+		<property name="typeAliasesPackage" value="com.lixiaodai.bookDinner.entity" />
+		<property name="plugins">
+			<list>
+				<!-- 这里的执行顺序是,数组后边的线执行,也就是如同栈一样,后进先出 -->
+				<ref bean="pageIntercepter" />
+				<ref bean="orderIntercepter" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- MyBatis扫描配置文件的包位置 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.lixiaodai.bookDinner.dao" />
+	</bean>
+
+	<!-- 集成freemarker,这里需要springframework-context-support包 -->
+	<bean id="freemarkerConfigurer"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPath" value="/WEB-INF/view/" />
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="freemarkerSettings">
+			<props>
+				<prop key="template_update_delay">10</prop>
+				<prop key="locale">zh_CN</prop>
+				<prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+				<prop key="date_format">yyyy-MM-dd</prop>
+				<prop key="number_format">#.##</prop>
+			</props>
+		</property>
+	</bean>
+	<!-- 设置国际化资源位置 -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basename" value="com/lixiaodai/bookDinner/international/messages" />
+ 		<property name="defaultEncoding" value="UTF-8"/>
+     	<property name="useCodeAsDefaultMessage" value="true" />
+	</bean>
+	<!-- 根据浏览器判断语言 -->
+	<bean id="localeResolver"
+		class="org.springframework.web.servlet.i18n.CookieLocaleResolver" />
+</beans>  
